@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+##@TODO: * Load/save model to pkl file
+#        * Plot decision boundaries
+
 print "Importing packages..."
 
 import sys, os
@@ -11,15 +14,16 @@ import math
 import root_numpy
 import matplotlib.pyplot as plt
 
-print "Finished importing packages."
+print "Finished importing packages.\n"
 
 print "Loading settings..."
 
 from settings import settings
 from plotting import *
 
-print "Finished loading settings."
+print "Finished loading settings.\n"
 
+### --- LOADING DATA --- ###
 sigfile = settings["sig_file"]
 bkgfile = settings["bkg_file"]
 model = settings["model_name"]
@@ -27,6 +31,7 @@ model = settings["model_name"]
 ## read input into pandas dataframe
 sig_ext = os.path.splitext(sigfile)[1]
 bkg_ext = os.path.splitext(bkgfile)[1]
+
 if sig_ext == '.csv' and bkg_ext == '.csv':
     ## input events are rows in csv file with header in first line
     df_sig = pandas.read_csv(sigfile,header=0)
@@ -44,14 +49,11 @@ if list(df_sig) != list(df_bkg):
     print "Error: List of input features not identical for signal and background. Exiting..."
     sys.exit()
 
-
-print "The following input features are available:"
+print "The following input features are available:\n"
 for feature in list(df_sig):
-    print "\t", feature
-    
-#print list(df_sig)
-#sys.exit()
+    print feature
 
+### --- PRE-PROCESSING DATA, FEATURE SELECTION --- ###    
 ## add truth labels as last column
 df_sig["is_signal"] = 1
 df_bkg["is_signal"] = 0    
@@ -60,7 +62,7 @@ df_bkg["is_signal"] = 0
 df = pandas.concat([df_sig, df_bkg], ignore_index=True)
 df = df.iloc[np.random.permutation(len(df))].reset_index(drop=True)
 
-## drop some features here
+## drop some features
 if settings["keep_features"] is not None:
     keep = settings["keep_features"]
 if settings["drop_features"] is not None:
@@ -71,6 +73,14 @@ df = df[keep]
 #df = df.drop(columns=drop)
 features = list(df)
 
+##plot features
+if settings["plot_features"]:
+    for feature in features:
+#    for [feature, xmin, xmax, nbins] in [[]]]:
+        plot_feature(df, feature)
+
+
+### --- PREPARE DATA FOR MODEL --- ###
 ## split data into train and test samples
 train_frac = settings["training_frac"]
 df["split"] = np.random.choice([0,1], df.shape[0],p=[train_frac, 1-train_frac])
@@ -80,12 +90,14 @@ test  = df[ df["split"]==1 ]
 ## remove entries with NaNs
 df.dropna(how='any',inplace=True)
 
-## sklearn requires numpy array as input
+## convert to np array for scikit
 used_vars = tuple([ col for col in xrange(len(features)-1)])
 X_train, y_train =  np.asarray(train)[:,used_vars], np.asarray(train["is_signal"])
 X_test, y_test = np.asarray(test)[:,used_vars], np.asarray(test["is_signal"])
 
-## classifier params
+
+### --- TRAINING MODEL --- ###
+## load classifier params
 classifier = settings["classifier"]
 cname = str(classifier)
 
@@ -122,6 +134,7 @@ model.fit(X_train, y_train)
 #get accuracy
 print "Accuracy:" , model.score(X_test,y_test)
 
+### --- TESTING --- ###
 ## predict labels on test data
 scores = model.predict_proba(X_test)
 

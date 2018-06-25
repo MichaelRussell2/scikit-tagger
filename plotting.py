@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
+#@TODO: plot 2d features, split .png and .dat plots
+
 import sys, os
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 
 from settings import settings
-#@TODO: plot features, split .png and .dat plots
 
 #plotpath=settings["model_name"]+"_plots"
 plotpath=settings["plot_path"]
@@ -97,6 +98,28 @@ def plot_sic(scores, y_test):
  
     np.savetxt(plotpath+"/sic.dat",np.c_[tpr, sic], delimiter="\t", header="TPR \t SIC", fmt="%.5f")
     
+## plot histograms of used features
+def plot_feature(dataframe, feature):
+
+    is_sig = dataframe["is_signal"]==1
+    is_bkg = dataframe["is_signal"]==0
+
+    sig = dataframe[feature][is_sig].values
+    bkg = dataframe[feature][is_bkg].values
+
+    plt.clf()
+    xmin = min(min(sig), min(bkg))
+    xmax = max(max(sig), max(bkg))
+    nbins = 50
+
+    sig, bins, _ = plt.hist(sig, bins=np.linspace(xmin,xmax,nbins+1), alpha=0.4, normed=False,label='sig')
+    bkg, bins, _ = plt.hist(bkg, bins=np.linspace(xmin,xmax,nbins+1), alpha=0.4, normed=False,label='bkg')
+    plt.savefig(plotpath+'/'+feature+'.png')
+
+    xlo, xhi = bins[:-1], bins[1:]
+    fmt=["%.2f","%.2f","%.7f", "%.7f"]
+    header="xmin \t xmax \t sig \t \bkg"
+    np.savetxt(plotpath+'/'+feature+'.dat', np.c_[xlo,xhi,sig,bkg], fmt=fmt, delimiter='\t')
     
 def plot_importance(model, features):
 

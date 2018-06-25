@@ -1,9 +1,10 @@
+
+#@TODO: LogisticRegression, XGBoost
+
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
-
-#@TODO: LogisticRegression, XGBoost
 
 settings = {
 
